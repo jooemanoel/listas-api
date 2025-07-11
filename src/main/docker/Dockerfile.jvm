@@ -78,21 +78,28 @@
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
 ###
-FROM registry.access.redhat.com/ubi9/openjdk-21:1.21
+# Etapa de build
+FROM eclipse-temurin:21-jdk as build
 
-ENV LANGUAGE='en_US:en'
+WORKDIR /app
 
+COPY . .
+RUN ./mvnw clean package -DskipTests
 
-# We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+# Etapa de runtime
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Copia o jar gerado para o container final
+COPY --from=build /app/target/listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
 
 EXPOSE 8080
-USER 185
-ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
-ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
-
+CMD ["java", "-jar", "app.jar"]
+# Configura o entrypoint para o script run-java.sh
+# ENTRYPOINT ["/app/run-java.sh"]
+# Se você quiser usar o script run-java.sh, descomente a linha acima e comente a linha CMD acima.
+# O script run-java.sh deve ser copiado para o diretório /app antes de ser usado.
+# Você pode fazer isso adicionando a linha COPY run-java.sh
+# COPY run-java.sh /app/run-java.sh 
