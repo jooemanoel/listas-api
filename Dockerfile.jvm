@@ -2,7 +2,11 @@ FROM eclipse-temurin:21-jdk as build
 
 WORKDIR /app
 
-COPY . .
+COPY pom.xml .
+COPY mvnw .
+COPY mvnw.cmd .
+COPY .mvn .mvn
+COPY src src
 
 RUN chmod +x ./mvnw
 RUN ./mvnw clean package -DskipTests
@@ -16,3 +20,5 @@ COPY --from=build /app/target/listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
 EXPOSE 8080
 
 CMD ["java", "-jar", "app.jar"]
+# This Dockerfile is used to build and run a Java application using Eclipse Temurin JDK and JRE.
+# It consists of two stages: build and runtime.
