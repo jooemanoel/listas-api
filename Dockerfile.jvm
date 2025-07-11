@@ -79,14 +79,13 @@
 #
 ###
 # Etapa de build
-FROM eclipse-temurin:21-jdk as build
+FROM maven:3.9.4-eclipse-temurin-21 as build
 
 WORKDIR /app
 
 COPY . .
 
-RUN chmod +x ./mvnw
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
 
@@ -97,6 +96,7 @@ COPY --from=build /app/target/listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
 EXPOSE 8080
 
 CMD ["java", "-jar", "app.jar"]
+
 
 # Configura o entrypoint para o script run-java.sh
 # ENTRYPOINT ["/app/run-java.sh"]
