@@ -1,25 +1,18 @@
-# Stage 1: Build com Maven
-FROM maven:3.9.4-eclipse-temurin-21 as build
+FROM eclipse-temurin:21-jdk as build
 
 WORKDIR /app
 
-# Copia pom e src para o container
-COPY pom.xml .
-COPY src ./src
+COPY . .
 
-# Build da aplicação (skip testes)
-RUN mvn clean package -DskipTests
+RUN chmod +x ./mvnw
+RUN ./mvnw clean package -DskipTests
 
-# Stage 2: Runtime com JRE leve
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-# Copia o jar gerado no build
 COPY --from=build /app/target/listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
 
-# Expõe a porta padrão do Quarkus
 EXPOSE 8080
 
-# Comando para rodar o jar
 CMD ["java", "-jar", "app.jar"]
