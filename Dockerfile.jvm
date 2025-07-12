@@ -2,7 +2,8 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY quarkus-run.jar app.jar
+# Copia o JAR a partir da pasta correta
+COPY target/quarkus-app/quarkus-run.jar app.jar
 
 EXPOSE 8080
 
