@@ -1,8 +1,5 @@
 joao\rest\UsuarioResource.class
-joao\persistence\models\Lista.class
-joao\persistence\models\ListaId.class
-joao\rest\GreetingResource.class
 joao\persistence\dao\UsuarioDAO.class
-joao\persistence\models\Item.class
 joao\persistence\models\Usuario.class
-joao\persistence\models\ItemId.class
+joao\persistence\models\Lista.class
+joao\persistence\models\Item.class
