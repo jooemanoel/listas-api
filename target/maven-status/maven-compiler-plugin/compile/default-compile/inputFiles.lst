@@ -1,4 +1,8 @@
 C:\VSCode\back\listas-api\src\main\java\joao\persistence\dao\UsuarioDAO.java
+C:\VSCode\back\listas-api\src\main\java\joao\persistence\models\Item.java
+C:\VSCode\back\listas-api\src\main\java\joao\persistence\models\ItemId.java
+C:\VSCode\back\listas-api\src\main\java\joao\persistence\models\Lista.java
+C:\VSCode\back\listas-api\src\main\java\joao\persistence\models\ListaId.java
 C:\VSCode\back\listas-api\src\main\java\joao\persistence\models\Usuario.java
 C:\VSCode\back\listas-api\src\main\java\joao\rest\GreetingResource.java
 C:\VSCode\back\listas-api\src\main\java\joao\rest\UsuarioResource.java

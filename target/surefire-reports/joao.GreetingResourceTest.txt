@@ -1,0 +1,40 @@
+-------------------------------------------------------------------------------
+Test set: joao.GreetingResourceTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 1.376 s <<< FAILURE! -- in joao.GreetingResourceTest
+joao.GreetingResourceTest.testHelloEndpoint -- Time elapsed: 0.011 s <<< ERROR!
+java.lang.RuntimeException: java.lang.ExceptionInInitializerError
+	at io.quarkus.test.junit.QuarkusTestExtension.throwBootFailureException(QuarkusTestExtension.java:668)
+	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestClassConstructor(QuarkusTestExtension.java:763)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: java.lang.ExceptionInInitializerError
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:534)
+	at java.base/java.lang.Class.forName(Class.java:513)
+	at io.quarkus.runner.bootstrap.StartupActionImpl.run(StartupActionImpl.java:294)
+	at io.quarkus.test.junit.QuarkusTestExtension.doJavaStart(QuarkusTestExtension.java:233)
+	at io.quarkus.test.junit.QuarkusTestExtension.ensureStarted(QuarkusTestExtension.java:642)
+	at io.quarkus.test.junit.QuarkusTestExtension.beforeAll(QuarkusTestExtension.java:687)
+	... 1 more
+Caused by: java.lang.RuntimeException: Failed to start quarkus
+	at io.quarkus.runner.ApplicationImpl.<clinit>(Unknown Source)
+	... 8 more
+Caused by: org.hibernate.id.IdentifierGenerationException: Identity generation isn't supported for composite ids
+	at org.hibernate.mapping.Component.buildIdentifierGenerator(Component.java:679)
+	at org.hibernate.mapping.Component.createGenerator(Component.java:650)
+	at org.hibernate.boot.internal.InFlightMetadataCollectorImpl.handleIdentifierValueBinding(InFlightMetadataCollectorImpl.java:2118)
+	at org.hibernate.boot.internal.InFlightMetadataCollectorImpl.processExportableProducers(InFlightMetadataCollectorImpl.java:2094)
+	at org.hibernate.boot.internal.InFlightMetadataCollectorImpl.buildMetadataInstance(InFlightMetadataCollectorImpl.java:2054)
+	at org.hibernate.boot.model.process.spi.MetadataBuildingProcess.complete(MetadataBuildingProcess.java:228)
+	at io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder.build(FastBootMetadataBuilder.java:414)
+	at io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder.createMetadata(PersistenceUnitsHolder.java:101)
+	at io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder.constructMetadataAdvance(PersistenceUnitsHolder.java:73)
+	at io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder.initializeJpa(PersistenceUnitsHolder.java:40)
+	at io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder$1.created(HibernateOrmRecorder.java:87)
+	at io.quarkus.arc.runtime.ArcRecorder.initBeanContainer(ArcRecorder.java:87)
+	at io.quarkus.runner.recorded.ArcProcessor$notifyBeanContainerListeners1304312071.deploy_0(Unknown Source)
+	at io.quarkus.runner.recorded.ArcProcessor$notifyBeanContainerListeners1304312071.deploy(Unknown Source)
+	... 9 more
+
