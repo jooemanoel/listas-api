@@ -2,7 +2,7 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY ./listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
+COPY target/listas-api-1.0.0-SNAPSHOT-runner.jar app.jar
 
 EXPOSE 8080
 
