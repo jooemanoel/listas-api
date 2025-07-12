@@ -1,0 +1,4 @@
+joao\persistence\dao\UsuarioDAO.class
+joao\rest\UsuarioResource.class
+joao\persistence\models\Usuario.class
+joao\rest\GreetingResource.class
