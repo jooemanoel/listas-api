@@ -1,0 +1,6 @@
+node_modules/
+.env
+.vercel
+# Chave da conta de serviço do Firebase: nunca vai para o repositório.
+*-firebase-adminsdk-*.json
+conta-servico*.json

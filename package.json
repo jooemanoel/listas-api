@@ -1,0 +1,27 @@
+{
+  "name": "listas-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API em Express para o app Listas: autenticação com JWT e acesso ao Firestore pelo servidor",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node --env-file=.env src/index.js",
+    "dev": "node --env-file=.env --watch src/index.js",
+    "dev:memoria": "node --watch src/index.js --memoria",
+    "test": "node --test",
+    "migrar": "node --env-file=.env scripts/migrar-dados-antigos.js",
+    "segredo": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\""
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "firebase-admin": "^14.5.1",
+    "jsonwebtoken": "^9.0.3"
+  }
+}
