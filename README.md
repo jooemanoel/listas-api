@@ -59,11 +59,11 @@ e nomes de listas e itens ficam em maiúsculas.
 
 ## Deploy na Vercel
 
-1. Importe o repositório na Vercel (sem framework, sem build: o `vercel.json` já manda tudo para `api/index.js`).
+1. Importe o repositório na Vercel. O `vercel.json` fixa `"framework": null` (preset "Other"): sem isso a Vercel detecta Express e cria uma função para `src/index.js` (servidor local), que quebra a rota `/`.
 2. Em *Settings → Environment Variables*, cadastre: `JWT_SECRET`, `JWT_EXPIRES_IN`,
    `CORS_ORIGINS` (ex.: `https://jooemanoel.github.io`), `FIREBASE_PROJECT_ID`,
    `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY` (cole a chave inteira, com os `\n`).
-3. Se a API ficar em outro endereço que não `https://listas-api.vercel.app`, ajuste o
+3. A API está em `https://listas-api-plum.vercel.app`; se o endereço mudar, ajuste o
    `.env.production` do listas-vue.
 
 ## Migração dos dados antigos
