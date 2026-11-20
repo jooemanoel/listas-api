@@ -43,9 +43,39 @@ Todas recebem e devolvem JSON. Erros vêm como `{ "erro": "mensagem" }`.
 | POST | `/listas/:id/itens` | `{ nome }` | `lista` |
 | PATCH | `/listas/:id/itens/:itemId` | `{ marcado }` | `lista` |
 | DELETE | `/listas/:id/itens/:itemId` | — | `lista` |
+| POST | `/listas/sincronizar` | `{ operacoes }` | `{ listas, excluidas, conflitos, ignoradas }` |
 
 As rotas de `/listas` e `/auth/eu` exigem `Authorization: Bearer <token>`.
 Formato da lista: `{ id, nome, itens: [{ id, nome, marcado }], criadoEm, atualizadoEm }`.
+
+### Sincronização (modo offline do listas-vue)
+
+O listas-vue registra toda alteração numa fila no aparelho e a envia para
+`POST /listas/sincronizar`, na ordem em que aconteceu. Online, logo em seguida; offline,
+quando a conexão voltar. Cada operação:
+
+```json
+{ "id": "op-id", "tipo": "adicionarItem", "listaId": "...", "itemId": "...", "nome": "arroz", "base": "2026-11-20T14:32:00.000Z" }
+```
+
+| `tipo` | campos |
+|---|---|
+| `criarLista` | `listaId` (gerado no aparelho), `nome` |
+| `excluirLista` | `listaId` |
+| `adicionarItem` | `listaId`, `itemId` (gerado no aparelho), `nome` |
+| `marcarItem` | `listaId`, `itemId`, `marcado` |
+| `removerItem` | `listaId`, `itemId` |
+
+- **`base`** é o `atualizadoEm` da lista que o aparelho conhecia ao fazer a alteração. Se o
+  do Firestore for mais novo, a lista também mudou em outro aparelho: as operações são
+  aplicadas mesmo assim, item a item (o que o outro aparelho fez e não foi tocado aqui
+  continua lá), e a lista volta em `conflitos` para o app avisar.
+- **Reenviar não duplica:** ids de lista e de item vêm do aparelho, então repetir a fila
+  (resposta perdida no caminho) dá o mesmo resultado.
+- **Operações impossíveis** (item repetido, lista excluída em outro aparelho, limite
+  atingido, dados inválidos) são puladas e voltam em `ignoradas: [{ id, motivo }]`, sem
+  travar as demais.
+- Até 500 operações e 200 KB por requisição.
 
 Como no app antigo, nomes de usuário viram maiúsculas sem acento (`João` → `JOAO`),
 e nomes de listas e itens ficam em maiúsculas.

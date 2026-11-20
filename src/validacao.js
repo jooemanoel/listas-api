@@ -14,6 +14,7 @@ export const LIMITES = {
   nomeItem: 100,
   listasPorUsuario: 200,
   itensPorLista: 500,
+  operacoesPorSincronizacao: 500,
 };
 
 /**
@@ -77,4 +78,61 @@ export function validarMarcado(corpo) {
     throw new ErroHttp(400, 'Campo "marcado" deve ser true ou false');
   }
   return corpo.marcado;
+}
+
+// ---------- Sincronização (alterações feitas offline no aparelho) ----------
+
+// Ids gerados no aparelho (listas, itens e as próprias operações): letras, números, _ e -.
+const ID = /^[A-Za-z0-9_-]{1,40}$/;
+const TIPOS = new Set(["criarLista", "excluirLista", "adicionarItem", "marcarItem", "removerItem"]);
+
+function id(op, campo) {
+  const valor = op[campo];
+  if (typeof valor !== "string" || !ID.test(valor)) throw new ErroHttp(400, `Campo "${campo}" inválido`);
+  return valor;
+}
+
+/** Corpo de POST /listas/sincronizar: { operacoes: [...] }. Só a estrutura geral; cada operação é validada à parte. */
+export function validarLote(corpo) {
+  const ops = corpo?.operacoes;
+  if (!Array.isArray(ops) || ops.length === 0) throw new ErroHttp(400, 'Campo "operacoes" deve ser uma lista não vazia');
+  if (ops.length > LIMITES.operacoesPorSincronizacao) {
+    throw new ErroHttp(400, `No máximo ${LIMITES.operacoesPorSincronizacao} operações por vez`);
+  }
+  return ops;
+}
+
+/**
+ * Uma operação da fila do aparelho. Lança ErroHttp se for inválida; quem chama decide
+ * se a ignora (para uma operação ruim não travar a fila inteira).
+ *   { id, tipo, listaId, base, itemId?, nome?, marcado? }
+ * `base` é o atualizadoEm da lista que o aparelho conhecia ao fazer a alteração (ou null).
+ */
+export function validarOperacao(op) {
+  if (!op || typeof op !== "object" || Array.isArray(op)) throw new ErroHttp(400, "Operação inválida");
+  if (!TIPOS.has(op.tipo)) throw new ErroHttp(400, "Tipo de operação desconhecido");
+
+  const valida = { id: id(op, "id"), tipo: op.tipo, listaId: id(op, "listaId"), base: null };
+  if (op.base != null) {
+    if (typeof op.base !== "string" || Number.isNaN(Date.parse(op.base))) throw new ErroHttp(400, 'Campo "base" inválido');
+    valida.base = op.base;
+  }
+
+  switch (op.tipo) {
+    case "criarLista":
+      valida.nome = validarNome(op, LIMITES.nomeLista);
+      break;
+    case "adicionarItem":
+      valida.itemId = id(op, "itemId");
+      valida.nome = validarNome(op, LIMITES.nomeItem);
+      break;
+    case "marcarItem":
+      valida.itemId = id(op, "itemId");
+      valida.marcado = validarMarcado(op);
+      break;
+    case "removerItem":
+      valida.itemId = id(op, "itemId");
+      break;
+  }
+  return valida;
 }

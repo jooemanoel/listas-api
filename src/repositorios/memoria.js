@@ -40,9 +40,10 @@ export function criarRepositorioMemoria() {
       return lista ? copiar(lista) : null;
     },
 
-    async criarLista(usuarioId, nome) {
+    async criarLista(usuarioId, nome, id) {
+      if (id && doUsuario(usuarioId).has(id)) return null;
       const agora = new Date().toISOString();
-      const lista = { id: randomBytes(10).toString("base64url"), nome, itens: [], criadoEm: agora, atualizadoEm: agora };
+      const lista = { id: id ?? randomBytes(10).toString("base64url"), nome, itens: [], criadoEm: agora, atualizadoEm: agora };
       doUsuario(usuarioId).set(lista.id, lista);
       return copiar(lista);
     },
@@ -55,7 +56,9 @@ export function criarRepositorioMemoria() {
       const atual = doUsuario(usuarioId).get(listaId);
       if (!atual) return null;
       const itens = alterar(copiar(atual));
-      const nova = { ...atual, itens, atualizadoEm: new Date().toISOString() };
+      // Garante um instante posterior ao anterior (no Firestore o relógio do servidor já avança).
+      const agora = Math.max(Date.now(), Date.parse(atual.atualizadoEm) + 1);
+      const nova = { ...atual, itens, atualizadoEm: new Date(agora).toISOString() };
       doUsuario(usuarioId).set(listaId, nova);
       return copiar(nova);
     },

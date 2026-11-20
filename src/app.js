@@ -21,6 +21,9 @@ export function criarApp({ repo, config }) {
       maxAge: 86400, // o navegador guarda a resposta do "preflight" por 1 dia
     })
   );
+  // A fila de alterações feitas offline pode ser maior que as demais requisições
+  // (até 500 operações). Esse parser vem antes: com o corpo já lido, o seguinte não lê de novo.
+  app.use("/listas/sincronizar", express.json({ limit: "200kb" }));
   app.use(express.json({ limit: "10kb" }));
 
   // Respostas com dados do usuário nunca devem ficar em cache compartilhado.

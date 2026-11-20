@@ -80,9 +80,19 @@ export function criarRepositorioFirestore(db = conectarFirestore()) {
       return snap.exists ? paraLista(snap) : null;
     },
 
-    async criarLista(usuarioId, nome) {
+    /**
+     * Cria a lista. Com `id` (lista criada offline no aparelho), usa esse id e devolve
+     * null se ele já existir: reenviar a mesma criação não duplica a lista.
+     */
+    async criarLista(usuarioId, nome, id) {
       const agora = new Date();
-      const ref = await listas(usuarioId).add({ nome, itens: [], criadoEm: agora, atualizadoEm: agora });
+      const ref = id ? listas(usuarioId).doc(id) : listas(usuarioId).doc();
+      try {
+        await ref.create({ nome, itens: [], criadoEm: agora, atualizadoEm: agora });
+      } catch (erro) {
+        if (erro.code === 6) return null; // ALREADY_EXISTS
+        throw erro;
+      }
       return { id: ref.id, nome, itens: [], criadoEm: agora.toISOString(), atualizadoEm: agora.toISOString() };
     },
 

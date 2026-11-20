@@ -133,6 +133,105 @@ describe("listas e itens", () => {
   });
 });
 
+describe("sincronização (modo offline)", () => {
+  let token;
+  let op = 0;
+  const nova = (dados) => ({ id: `op${++op}`, base: null, ...dados });
+  const sincronizar = (operacoes, t = token) => chamar("POST", "/listas/sincronizar", { token: t, corpo: { operacoes } });
+
+  before(async () => {
+    token = (await chamar("POST", "/auth/cadastro", { corpo: { nome: "Offline", senha: "segredo3" } })).dados.token;
+  });
+
+  test("exige login e uma lista de operações", async () => {
+    assert.equal((await chamar("POST", "/listas/sincronizar", { corpo: { operacoes: [] } })).status, 401);
+    assert.equal((await sincronizar([])).status, 400);
+    assert.equal((await chamar("POST", "/listas/sincronizar", { token, corpo: { operacoes: "x" } })).status, 400);
+  });
+
+  test("cria lista e itens com ids do aparelho e é idempotente ao reenviar", async () => {
+    const ops = [
+      nova({ tipo: "criarLista", listaId: "listaOffline1", nome: " feira " }),
+      nova({ tipo: "adicionarItem", listaId: "listaOffline1", itemId: "item1", nome: "banana" }),
+      nova({ tipo: "adicionarItem", listaId: "listaOffline1", itemId: "item2", nome: "maçã" }),
+      nova({ tipo: "marcarItem", listaId: "listaOffline1", itemId: "item1", marcado: true }),
+      nova({ tipo: "removerItem", listaId: "listaOffline1", itemId: "item2" }),
+    ];
+    let r = await sincronizar(ops);
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.dados.conflitos, []);
+    assert.deepEqual(r.dados.ignoradas, []);
+    assert.equal(r.dados.listas.length, 1);
+    assert.equal(r.dados.listas[0].nome, "FEIRA");
+    assert.deepEqual(r.dados.listas[0].itens, [{ id: "item1", nome: "BANANA", marcado: true }]);
+
+    // A resposta se perdeu e o aparelho reenvia tudo: nada duplica.
+    r = await sincronizar(ops);
+    assert.deepEqual(r.dados.listas[0].itens, [{ id: "item1", nome: "BANANA", marcado: true }]);
+    assert.equal((await chamar("GET", "/listas", { token })).dados.length, 1);
+  });
+
+  test("detecta alteração feita em outro aparelho e aplica as alterações mesmo assim", async () => {
+    const lista = (await chamar("GET", "/listas/listaOffline1", { token })).dados;
+    const base = lista.atualizadoEm;
+
+    // Outro aparelho adiciona um item depois que este ficou offline.
+    await chamar("POST", "/listas/listaOffline1/itens", { token, corpo: { nome: "pão" } });
+
+    const r = await sincronizar([
+      nova({ tipo: "adicionarItem", listaId: "listaOffline1", itemId: "item3", nome: "leite", base }),
+      nova({ tipo: "marcarItem", listaId: "listaOffline1", itemId: "item1", marcado: false, base }),
+    ]);
+    assert.deepEqual(r.dados.conflitos, ["listaOffline1"]);
+    assert.deepEqual(r.dados.listas[0].itens.map((i) => [i.nome, i.marcado]), [
+      ["BANANA", false],
+      ["PÃO", false],
+      ["LEITE", false],
+    ]);
+    assert.ok(Date.parse(r.dados.listas[0].atualizadoEm) > Date.parse(base));
+
+    // Com a base atualizada, não há conflito.
+    const semConflito = await sincronizar([
+      nova({ tipo: "marcarItem", listaId: "listaOffline1", itemId: "item3", marcado: true, base: r.dados.listas[0].atualizadoEm }),
+    ]);
+    assert.deepEqual(semConflito.dados.conflitos, []);
+  });
+
+  test("pula operações impossíveis sem travar as outras", async () => {
+    const r = await sincronizar([
+      nova({ tipo: "adicionarItem", listaId: "listaOffline1", itemId: "item9", nome: "banana" }), // nome repetido
+      nova({ tipo: "marcarItem", listaId: "listaOffline1", itemId: "naoExiste", marcado: true }),
+      nova({ tipo: "adicionarItem", listaId: "listaOffline1", itemId: "item4", nome: "café" }),
+      nova({ tipo: "adicionarItem", listaId: "listaApagada", itemId: "item5", nome: "x", base: new Date().toISOString() }),
+      { id: "ruim", tipo: "apagarTudo", listaId: "listaOffline1" },
+      nova({ tipo: "adicionarItem", listaId: "../outro-usuario", itemId: "i", nome: "x" }),
+    ]);
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.dados.ignoradas.map((i) => i.id).sort(), ["op10", "op12", "op13", "op9", "ruim"].sort());
+    assert.ok(r.dados.listas[0].itens.some((i) => i.nome === "CAFÉ"));
+    assert.ok(r.dados.excluidas.includes("listaApagada"));
+    assert.ok(r.dados.conflitos.includes("listaApagada"));
+  });
+
+  test("exclui lista; criar e excluir offline não grava nada", async () => {
+    let r = await sincronizar([
+      nova({ tipo: "criarLista", listaId: "temporaria", nome: "rascunho" }),
+      nova({ tipo: "excluirLista", listaId: "temporaria" }),
+      nova({ tipo: "excluirLista", listaId: "listaOffline1" }),
+    ]);
+    assert.deepEqual(r.dados.excluidas.sort(), ["listaOffline1", "temporaria"]);
+    assert.equal((await chamar("GET", "/listas", { token })).dados.length, 0);
+  });
+
+  test("um usuário não sincroniza nas listas de outro", async () => {
+    const dono = (await chamar("POST", "/auth/login", { corpo: { nome: "JOAO EMANOEL", senha: "segredo1" } })).dados.token;
+    const { dados } = await chamar("POST", "/listas", { token: dono, corpo: { nome: "alheia" } });
+    const r = await sincronizar([nova({ tipo: "adicionarItem", listaId: dados.id, itemId: "intruso", nome: "x" })]);
+    assert.deepEqual(r.dados.listas, []);
+    assert.equal((await chamar("GET", `/listas/${dados.id}`, { token: dono })).dados.itens.length, 0);
+  });
+});
+
 describe("cabeçalhos", () => {
   test("CORS só libera as origens configuradas; respostas não vão para cache", async () => {
     const liberada = await fetch(base + "/", { headers: { Origin: "http://localhost:5173" } });
