@@ -85,19 +85,15 @@ As regras ficam em [firestore.rules](firestore.rules) e são publicadas com `npm
 
 - O firebase-admin **ignora** as regras: a API e o script de migração continuam funcionando
   com o Listas fechado para o navegador.
-- As regras valem para o **projeto inteiro** (`testebd-80d9e`). O arquivo já inclui o que os
-  outros apps precisam; publicar uma versão sem esses blocos quebra esses apps.
+- As regras valem para o **projeto inteiro** (`testebd-80d9e`) e fecham **todo** o banco para o
+  navegador. Só os servidores acessam, pelo firebase-admin:
 
-| Coleção | Quem usa | Regra |
-|---|---|---|
-| `listas_usuarios/**` | listas-api (firebase-admin) | fechada |
-| `questoes`, `meta` | questoes-rapidas-api (SDK web no servidor) | aberta, até ela migrar para o firebase-admin |
-| `usuarios`, coleções com nome de usuário | listas-estatico (app antigo, desativado) | fechada (dados migrados e apagados) |
-| qualquer outra | — | fechada |
+| Coleção | Quem usa |
+|---|---|
+| `listas_usuarios/**` | listas-api |
+| `questoes`, `meta` | questoes-rapidas-api |
 
-> **questoes-rapidas-api:** enquanto ela usar o SDK *web*, qualquer um com a `apiKey` pode
-> gravar em `questoes`. Migrando-a para o firebase-admin, dá para fechar o banco inteiro
-> (`match /{documento=**} { allow read, write: if false; }`).
+Se algum app precisar ler direto do navegador, libere só a coleção dele no `firestore.rules`.
 
 ## Estrutura
 

@@ -3,42 +3,22 @@ rules_version = '2';
 // Regras do Firestore do projeto testebd-80d9e.
 //
 // ATENÇÃO: as regras valem para o PROJETO INTEIRO, não só para o Listas. Publicar este
-// arquivo substitui as regras atuais de todas as coleções. Ele já inclui o que os outros
-// apps do projeto precisam; ao mudar algo, mantenha esses blocos.
+// arquivo substitui as regras atuais de todas as coleções.
 //
-// Como funcionam:
-//   - Tudo que não casa com nenhum "match" abaixo é NEGADO (padrão do Firestore).
-//   - O firebase-admin (listas-api, script de migração) IGNORA estas regras: ele se
-//     autentica com a conta de serviço. Por isso a API continua funcionando com o
-//     Listas totalmente fechado.
-//   - Estas regras só valem para quem usa o SDK web/mobile com a apiKey (que é pública).
+// Banco totalmente fechado para o navegador. Quem acessa são só os servidores, pelo
+// firebase-admin (conta de serviço), que IGNORA estas regras:
+//   - listas-api            -> listas_usuarios/**
+//   - questoes-rapidas-api  -> questoes, meta
+//
+// Estas regras só valem para quem usa o SDK web/mobile com a apiKey (que é pública).
+// Se algum app novo precisar ler direto do navegador, libere só a coleção dele aqui.
 //
 // Publicar: npm run regras   (veja o README, seção "Fechar o banco")
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ---------------------------------------------------------------------------
-    // Listas (listas-api): só o servidor acessa. Nenhuma regra libera nada aqui,
-    // então o navegador não lê nem grava usuários, hashes de senha ou listas.
-    // (Bloco explícito só para documentar; sem ele o resultado seria o mesmo.)
-    match /listas_usuarios/{documento=**} {
+    match /{documento=**} {
       allow read, write: if false;
     }
-
-    // ---------------------------------------------------------------------------
-    // questoes-rapidas-api: usa o SDK *web* no servidor, então depende de acesso aberto.
-    // Enquanto ela não migrar para o firebase-admin, qualquer pessoa com a apiKey pode
-    // ler e gravar aqui. Depois da migração, apague estes dois blocos.
-    match /questoes/{id} {
-      allow read, write: if true;
-    }
-    match /meta/{id} {
-      allow read, write: if true;
-    }
-
-    // O app antigo do Listas (listas-estatico) gravava direto do navegador em "usuarios"
-    // e em coleções com o nome de cada usuário. Esses dados foram migrados e apagados,
-    // e o acesso foi fechado: qualquer outra coleção cai no "negado" padrão.
   }
 }
