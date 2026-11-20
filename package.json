@@ -14,7 +14,8 @@
     "dev:memoria": "node --watch src/index.js --memoria",
     "test": "node --test",
     "migrar": "node --env-file=.env scripts/migrar-dados-antigos.js",
-    "segredo": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\""
+    "segredo": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\"",
+    "regras": "npx --yes firebase-tools deploy --only firestore:rules"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -24,6 +24,7 @@ npm run dev           # com o Firestore (precisa do .env)
 npm test              # testes de ponta a ponta (usam o repositório em memória)
 npm run segredo       # gera um valor para JWT_SECRET
 npm run migrar        # simula a migração dos dados antigos (--gravar para aplicar)
+npm run regras        # publica o firestore.rules no Firebase
 ```
 
 ## Rotas
@@ -77,31 +78,26 @@ O script **copia** de `usuarios` + coleção-por-usuário para `listas_usuarios/
 sem apagar nada. Pode rodar de novo: quem já foi migrado é pulado. Quem se cadastrar no app
 antigo depois da migração precisa de uma nova rodada.
 
-## Depois da migração: fechar o banco
+## Fechar o banco (regras do Firestore)
 
-O firebase-admin ignora as regras do Firestore, então a API continua funcionando com tudo
-bloqueado para o navegador. Quando o app antigo for desligado:
+As regras ficam em [firestore.rules](firestore.rules) e são publicadas com `npm run regras`
+(usa o firebase-tools; na primeira vez rode `npx firebase-tools login`).
 
-1. Apague a coleção `usuarios` e as coleções com nomes de usuários (elas ainda têm as senhas em texto puro e ficam legíveis por qualquer um enquanto as regras permitirem).
-2. Bloqueie as coleções do Listas nas regras do Firestore:
+- O firebase-admin **ignora** as regras: a API e o script de migração continuam funcionando
+  com o Listas fechado para o navegador.
+- As regras valem para o **projeto inteiro** (`testebd-80d9e`). O arquivo já inclui o que os
+  outros apps precisam; publicar uma versão sem esses blocos quebra esses apps.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Só a listas-api (firebase-admin) acessa.
-    match /listas_usuarios/{documento=**} {
-      allow read, write: if false;
-    }
-    // ...regras das outras coleções do projeto
-  }
-}
-```
+| Coleção | Quem usa | Regra |
+|---|---|---|
+| `listas_usuarios/**` | listas-api (firebase-admin) | fechada |
+| `questoes`, `meta` | questoes-rapidas-api (SDK web no servidor) | aberta, até ela migrar para o firebase-admin |
+| `usuarios`, coleções com nome de usuário | listas-estatico (app antigo, desativado) | fechada (dados migrados e apagados) |
+| qualquer outra | — | fechada |
 
-> **Atenção (questoes-rapidas-api):** ela usa o SDK *web* do Firebase no servidor, então
-> depende de regras abertas para a coleção `questoes` — e qualquer um com a `apiKey` pode
-> gravar nela. Vale migrá-la para o firebase-admin, do mesmo jeito que aqui, e então
-> fechar o banco inteiro (`match /{documento=**} { allow read, write: if false; }`).
+> **questoes-rapidas-api:** enquanto ela usar o SDK *web*, qualquer um com a `apiKey` pode
+> gravar em `questoes`. Migrando-a para o firebase-admin, dá para fechar o banco inteiro
+> (`match /{documento=**} { allow read, write: if false; }`).
 
 ## Estrutura
 
@@ -116,6 +112,7 @@ src/repositorios/firestore.js acesso ao Firestore (firebase-admin)
 src/repositorios/memoria.js   mesma interface, em memória (testes e dev:memoria)
 scripts/migrar-dados-antigos.js
 test/api.test.js
+firestore.rules               regras do Firestore (projeto inteiro); firebase.json/.firebaserc para publicar
 ```
 
 ## Limitações conhecidas
